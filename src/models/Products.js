@@ -1,5 +1,67 @@
 const mongoose = require("mongoose");
 
+// ==========================================
+// PRODUCT VARIANT SCHEMA
+// ==========================================
+
+const productVariantSchema = new mongoose.Schema(
+  {
+    unitValue: {
+      type: Number,
+      required: true,
+      min: 0.001,
+    },
+
+    unit: {
+      type: String,
+      enum: [
+        "Kg",
+        "Gram",
+        "Piece",
+        "Dozen",
+        "Bundle",
+      ],
+      required: true,
+    },
+
+    price: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    discountPrice: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    costPrice: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    stock: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    sku: {
+      type: String,
+      trim: true,
+    },
+  },
+  {
+    _id: true,
+  }
+);
+
+// ==========================================
+// PRODUCT SCHEMA
+// ==========================================
+
 const productSchema = new mongoose.Schema(
   {
     name: {
@@ -35,6 +97,11 @@ const productSchema = new mongoose.Schema(
       type: String,
     },
 
+    // ==========================================
+    // OLD / DEFAULT PRICE
+    // Keep these for backward compatibility
+    // ==========================================
+
     price: {
       type: Number,
       required: true,
@@ -68,9 +135,33 @@ const productSchema = new mongoose.Schema(
 
     unit: {
       type: String,
-      enum: ["Kg", "Gram", "Piece", "Dozen", "Bundle"],
+      enum: [
+        "Kg",
+        "Gram",
+        "Piece",
+        "Dozen",
+        "Bundle",
+      ],
       default: "Kg",
     },
+unitValue: {
+  type: Number,
+  required: true,
+  min: 0.001,
+  default: 1,
+},
+    // ==========================================
+    // PRODUCT VARIANTS
+    // ==========================================
+
+    variants: {
+      type: [productVariantSchema],
+      default: [],
+    },
+
+    // ==========================================
+    // IMAGES
+    // ==========================================
 
     images: {
       type: [String],
@@ -84,7 +175,11 @@ const productSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Active", "Inactive", "Draft"],
+      enum: [
+        "Active",
+        "Inactive",
+        "Draft",
+      ],
       default: "Active",
     },
 
@@ -101,4 +196,7 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Product", productSchema);
+module.exports = mongoose.model(
+  "Product",
+  productSchema
+);
