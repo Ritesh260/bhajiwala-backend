@@ -18,6 +18,10 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const productRoutes = require("./routes/productRoutes");
+const offerRoutes = require("./routes/offerRoutes");
+const couponRoutes = require("./routes/couponRoutes");
+const comboRoutes = require("./routes/comboRoutes");
+const seasonalOfferRoutes = require("./routes/seasonalOfferRoutes");
 
 const app = express();
 
@@ -46,6 +50,12 @@ app.use("/api/auth", authRoutes);
 
 app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/offers/combos", comboRoutes);
+app.use("/api/offers/seasonal", seasonalOfferRoutes);
+app.use("/api/offers", offerRoutes);
+app.use("/api/coupons", couponRoutes);
+
+
 
 // ==========================================
 // HOME
