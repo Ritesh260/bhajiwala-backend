@@ -25,6 +25,9 @@ const couponRoutes = require("./routes/couponRoutes");
 const comboRoutes = require("./routes/comboRoutes");
 const seasonalOfferRoutes = require("./routes/seasonalOfferRoutes");
 
+const userProfileRoutes = require("./routes/userProfileRoutes");
+const addressRoutes = require("./routes/addressRoutes");
+
 const app = express();
 
 
@@ -58,6 +61,9 @@ app.use("/api/offers", offerRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/user/cart", cartRoutes);
 app.use("/api/user/wishlist", wishlistRoutes);
+
+app.use("/api/user/profile", userProfileRoutes);
+app.use("/api/user/addresses", addressRoutes);
 
 
 // ==========================================
