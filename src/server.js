@@ -16,6 +16,8 @@ const cors = require("cors");
 const connectDB = require("./config/db");
 
 const authRoutes = require("./routes/authRoutes");
+const cartRoutes = require("./routes/cartRoutes");
+const wishlistRoutes = require("./routes/wishlistRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const productRoutes = require("./routes/productRoutes");
 const offerRoutes = require("./routes/offerRoutes");
@@ -47,14 +49,15 @@ app.use(express.json());
 // ==========================================
 
 app.use("/api/auth", authRoutes);
-
+app.use("/api/user/auth", require("./routes/authUserRoutes"));
 app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/offers/combos", comboRoutes);
 app.use("/api/offers/seasonal", seasonalOfferRoutes);
 app.use("/api/offers", offerRoutes);
 app.use("/api/coupons", couponRoutes);
-
+app.use("/api/user/cart", cartRoutes);
+app.use("/api/user/wishlist", wishlistRoutes);
 
 
 // ==========================================
