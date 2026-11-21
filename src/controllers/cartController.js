@@ -1,7 +1,77 @@
-
 const mongoose = require("mongoose");
 const Cart = require("../models/Cart");
 const Product = require("../models/Products");
+
+// ==========================================
+// STOCK CONVERSION HELPER
+// Converts variant quantity into parent product unit
+// ==========================================
+
+const getStockConsumption = (unitValue, itemUnit, product) => {
+  const parentUnit = product.unit;
+  const value = Number(unitValue);
+
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error("Invalid product or variant unit value");
+  }
+
+  // Same unit: no conversion required
+  if (itemUnit === parentUnit) {
+    return value;
+  }
+
+  // Weight conversion: Gram <-> Kg
+  if (itemUnit === "Gram" && parentUnit === "Kg") {
+    return value / 1000;
+  }
+
+  if (itemUnit === "Kg" && parentUnit === "Gram") {
+    return value * 1000;
+  }
+
+  // Do not assume conversions for Piece, Dozen or Bundle
+  throw new Error(
+    `Cannot convert ${itemUnit} into product stock unit ${parentUnit}`
+  );
+};
+
+// Get how much stock one cart item consumes
+const getItemStockConsumption = (item, product) => {
+  if (item.variantId) {
+    const variant = product.variants.id(item.variantId);
+
+    if (!variant) {
+      throw new Error(`Variant not found for ${product.name}`);
+    }
+
+    return getStockConsumption(
+      variant.unitValue,
+      variant.unit,
+      product
+    ) * item.quantity;
+  }
+
+  return getStockConsumption(
+    product.unitValue,
+    product.unit,
+    product
+  ) * item.quantity;
+};
+
+// Calculate total stock used by all cart items of a product
+const getCartProductUsage = (cart, product) => {
+  let totalUsage = 0;
+
+  for (const item of cart.items) {
+    if (item.product.toString() !== product._id.toString()) {
+      continue;
+    }
+
+    totalUsage += getItemStockConsumption(item, product);
+  }
+
+  return totalUsage;
+};
 
 // ==========================================
 // ADD TO CART
@@ -63,11 +133,9 @@ exports.addToCart = async (req, res) => {
       });
     }
 
-    const availableStock = selectedVariant
-      ? selectedVariant.stock
-      : product.stock;
-
-    let cart = await Cart.findOne({ user: req.user.id });
+    let cart = await Cart.findOne({
+      user: req.user.id,
+    });
 
     if (!cart) {
       cart = new Cart({
@@ -86,19 +154,37 @@ exports.addToCart = async (req, res) => {
       return sameProduct && sameVariant;
     });
 
-    const newQuantity = existingItem
-      ? existingItem.quantity + quantity
-      : quantity;
+    // Calculate current parent stock usage across all variants
+    const currentUsage = getCartProductUsage(cart, product);
 
-    if (newQuantity > availableStock) {
+    // Calculate stock consumed by the requested quantity
+    const unitValue = selectedVariant
+      ? selectedVariant.unitValue
+      : product.unitValue;
+
+    const itemUnit = selectedVariant
+      ? selectedVariant.unit
+      : product.unit;
+
+    const requestedUsage =
+      getStockConsumption(unitValue, itemUnit, product) * quantity;
+
+    const totalUsage = currentUsage + requestedUsage;
+
+    if (totalUsage > product.stock) {
+      const remainingStock = Math.max(
+        0,
+        product.stock - currentUsage
+      );
+
       return res.status(400).json({
         success: false,
-        message: `Only ${availableStock} items available in stock`,
+        message: `Insufficient stock. Only ${remainingStock} ${product.unit} available for this product.`,
       });
     }
 
     if (existingItem) {
-      existingItem.quantity = newQuantity;
+      existingItem.quantity += quantity;
     } else {
       cart.items.push({
         product: productId,
@@ -109,12 +195,14 @@ exports.addToCart = async (req, res) => {
 
     await cart.save();
 
-    cart = await Cart.findById(cart._id).populate("items.product");
+    const updatedCart = await Cart.findById(cart._id).populate(
+      "items.product"
+    );
 
     return res.status(200).json({
       success: true,
       message: "Product added to cart successfully",
-      cart,
+      cart: updatedCart,
     });
   } catch (error) {
     return res.status(500).json({
@@ -211,25 +299,30 @@ exports.updateCartQuantity = async (req, res) => {
       });
     }
 
-    let availableStock = product.stock;
+    // Current total stock usage by this product in cart
+    const currentUsage = getCartProductUsage(cart, product);
 
-    if (item.variantId) {
-      const variant = product.variants.id(item.variantId);
+    // Remove the current item's usage from calculation
+    const oldItemUsage = getItemStockConsumption(item, product);
 
-      if (!variant) {
-        return res.status(404).json({
-          success: false,
-          message: "Product variant not found",
-        });
-      }
+    // Calculate usage with the requested new quantity
+    const unitValue = item.variantId
+      ? product.variants.id(item.variantId).unitValue
+      : product.unitValue;
 
-      availableStock = variant.stock;
-    }
+    const itemUnit = item.variantId
+      ? product.variants.id(item.variantId).unit
+      : product.unit;
 
-    if (quantity > availableStock) {
+    const newItemUsage =
+      getStockConsumption(unitValue, itemUnit, product) * quantity;
+
+    const totalUsage = currentUsage - oldItemUsage + newItemUsage;
+
+    if (totalUsage > product.stock) {
       return res.status(400).json({
         success: false,
-        message: `Only ${availableStock} items available in stock`,
+        message: `Insufficient stock. Available stock is ${product.stock} ${product.unit}.`,
       });
     }
 
@@ -237,8 +330,9 @@ exports.updateCartQuantity = async (req, res) => {
 
     await cart.save();
 
-    const updatedCart = await Cart.findById(cart._id)
-      .populate("items.product");
+    const updatedCart = await Cart.findById(cart._id).populate(
+      "items.product"
+    );
 
     return res.status(200).json({
       success: true,
@@ -290,10 +384,12 @@ exports.removeCartItem = async (req, res) => {
     }
 
     item.deleteOne();
+
     await cart.save();
 
-    const updatedCart = await Cart.findById(cart._id)
-      .populate("items.product");
+    const updatedCart = await Cart.findById(cart._id).populate(
+      "items.product"
+    );
 
     return res.status(200).json({
       success: true,

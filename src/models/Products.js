@@ -1,7 +1,10 @@
+
 const mongoose = require("mongoose");
 
 // ==========================================
 // PRODUCT VARIANT SCHEMA
+// Variants only define quantity and pricing.
+// Stock is managed by the parent Product.
 // ==========================================
 
 const productVariantSchema = new mongoose.Schema(
@@ -37,12 +40,6 @@ const productVariantSchema = new mongoose.Schema(
     },
 
     costPrice: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-
-    stock: {
       type: Number,
       default: 0,
       min: 0,
@@ -98,8 +95,7 @@ const productSchema = new mongoose.Schema(
     },
 
     // ==========================================
-    // OLD / DEFAULT PRICE
-    // Keep these for backward compatibility
+    // PRODUCT PRICING
     // ==========================================
 
     price: {
@@ -120,6 +116,10 @@ const productSchema = new mongoose.Schema(
       min: 0,
     },
 
+    // ==========================================
+    // PRODUCT SKU
+    // ==========================================
+
     sku: {
       type: String,
       unique: true,
@@ -127,12 +127,18 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // ==========================================
+    // MAIN PRODUCT STOCK
+    // Single source of inventory
+    // ==========================================
+
     stock: {
       type: Number,
       default: 0,
       min: 0,
     },
 
+    // Main stock measurement
     unit: {
       type: String,
       enum: [
@@ -144,14 +150,17 @@ const productSchema = new mongoose.Schema(
       ],
       default: "Kg",
     },
-unitValue: {
-  type: Number,
-  required: true,
-  min: 0.001,
-  default: 1,
-},
+
+    unitValue: {
+      type: Number,
+      required: true,
+      min: 0.001,
+      default: 1,
+    },
+
     // ==========================================
     // PRODUCT VARIANTS
+    // No separate variant stock
     // ==========================================
 
     variants: {
@@ -168,6 +177,10 @@ unitValue: {
       default: [],
     },
 
+    // ==========================================
+    // STATUS
+    // ==========================================
+
     featured: {
       type: Boolean,
       default: false,
@@ -182,6 +195,10 @@ unitValue: {
       ],
       default: "Active",
     },
+
+    // ==========================================
+    // SEO
+    // ==========================================
 
     seoTitle: {
       type: String,

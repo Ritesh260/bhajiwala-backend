@@ -27,7 +27,11 @@ const seasonalOfferRoutes = require("./routes/seasonalOfferRoutes");
 
 const userProfileRoutes = require("./routes/userProfileRoutes");
 const addressRoutes = require("./routes/addressRoutes");
-
+const deliverySettingsRoutes = require("./routes/deliverySettingsRoutes");
+const checkoutRoutes = require("./routes/checkoutRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const deliveryPartnerRoutes = require("./routes/deliveryPartnerRoutes");
+const adminDeliveryPartnerRoutes = require("./routes/adminDeliveryPartnerRoutes");
 const app = express();
 
 
@@ -64,8 +68,11 @@ app.use("/api/user/wishlist", wishlistRoutes);
 
 app.use("/api/user/profile", userProfileRoutes);
 app.use("/api/user/addresses", addressRoutes);
-
-
+app.use("/api/delivery-settings", deliverySettingsRoutes);
+app.use("/api/user/checkout", checkoutRoutes);
+app.use("/api/user/orders", orderRoutes);
+app.use("/api/delivery-partners", deliveryPartnerRoutes);
+app.use("/api/admin/delivery-partners", adminDeliveryPartnerRoutes);
 // ==========================================
 // HOME
 // ==========================================
