@@ -2,7 +2,7 @@
 const jwt = require("jsonwebtoken");
 const DeliveryPartner = require("../models/DeliveryPartner");
 const uploadToCloudinary = require("../utils/uploadToCloudinary");
-
+const sendEmail = require("../utils/sendEmail");
 const generateToken = (partner) => {
   return jwt.sign(
     {
@@ -203,7 +203,35 @@ exports.registerDeliveryPartner = async (req, res) => {
       bankName,
       applicationStatus: "pending",
     });
+// Send registration confirmation email
+const emailResult = await sendEmail({
+  to: partner.email,
+  subject: "BhajiWala - Registration Successful",
+  text: `Hello ${partner.fullName}, your delivery partner registration has been submitted successfully. Your application is pending verification.`,
+  html: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 25px; color: #333;">
+      <h2 style="color: #15803d;">Welcome to BhajiWala!</h2>
 
+      <p>Hello <strong>${partner.fullName}</strong>,</p>
+
+      <p>Your delivery partner registration has been submitted successfully.</p>
+
+      <div style="background: #f0fdf4; padding: 15px; border-radius: 10px;">
+        <p><strong>Application ID:</strong> ${partner._id}</p>
+        <p><strong>Status:</strong> Pending Verification</p>
+      </div>
+
+      <p>Our team will review your application and notify you about the approval status.</p>
+
+      <p>Thank you for joining BhajiWala!</p>
+      <strong>Team BhajiWala</strong>
+    </div>
+  `,
+});
+
+if (!emailResult.success) {
+  console.error("Registration email could not be sent:", emailResult.message);
+}
     return res.status(201).json({
       success: true,
       message:
