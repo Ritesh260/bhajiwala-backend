@@ -11,10 +11,16 @@ const sendEmail = async ({ to, subject, html, text }) => {
       throw new Error("Email subject and HTML content are required.");
     }
 
+    const senderEmail = process.env.EMAIL_FROM;
+
+    if (!senderEmail) {
+      throw new Error("EMAIL_FROM is missing in environment variables.");
+    }
+
     const info = await emailTransporter.sendMail({
       from: {
         name: process.env.EMAIL_FROM_NAME || "BhajiWala",
-        address: process.env.SMTP_EMAIL,
+        address: senderEmail,
       },
       to,
       subject,
@@ -25,6 +31,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
     console.log("Email sent successfully:", {
       messageId: info.messageId,
       recipient: to,
+      sender: senderEmail,
       subject,
     });
 
