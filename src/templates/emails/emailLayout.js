@@ -28,139 +28,233 @@ const emailLayout = ({
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
     <title>${escapeHtml(title)}</title>
   </head>
 
   <body style="
     margin:0;
     padding:0;
-    background:#f3f7f3;
+    background-color:#f3f6f1;
     font-family:Arial,Helvetica,sans-serif;
     color:#26352b;
+    -webkit-text-size-adjust:100%;
   ">
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0"
-      style="background:#f3f7f3;padding:35px 12px;">
-
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      role="presentation"
+      style="
+        width:100%;
+        background-color:#f3f6f1;
+        padding:30px 12px;
+      "
+    >
       <tr>
         <td align="center">
 
-          <table width="100%" cellpadding="0" cellspacing="0" border="0"
+          <table
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            role="presentation"
             style="
+              width:100%;
               max-width:620px;
-              background:#ffffff;
-              border-radius:18px;
+              background-color:#ffffff;
+              border:1px solid #e7ece5;
+              border-radius:16px;
               overflow:hidden;
-              border:1px solid #e6eee6;
-            ">
+            "
+          >
 
-            <!-- HEADER -->
+            <!-- BRAND HEADER -->
             <tr>
-              <td align="center"
+              <td
+                align="left"
                 style="
-                  background:#16803c;
-                  padding:32px 20px;
-                ">
+                  padding:22px 24px;
+                  background-color:#f8faf6;
+                  border-bottom:1px solid #edf1eb;
+                "
+              >
 
-                <div style="
-                  color:#ffffff;
-                  font-size:30px;
-                  font-weight:800;
-                  letter-spacing:-1px;
-                ">
-                  🥬 BhajiWala
-                </div>
+                <table
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  role="presentation"
+                >
+                  <tr>
 
-                <div style="
-                  color:#dcfce7;
-                  font-size:11px;
-                  letter-spacing:2px;
-                  margin-top:8px;
-                ">
-                  FRESH • FAST • AT YOUR DOORSTEP
-                </div>
+                    <!-- LOGO ICON -->
+                    <td
+                      width="50"
+                      height="50"
+                      align="center"
+                      valign="middle"
+                      style="
+                        width:50px;
+                        height:50px;
+                        background-color:#00a63e;
+                        border-radius:14px;
+                        color:#ffffff;
+                        font-size:29px;
+                        font-weight:400;
+                        line-height:50px;
+                        text-align:center;
+                      "
+                    >
+                      &#10087;
+                    </td>
+
+                    <!-- BRAND NAME -->
+                    <td
+                      valign="middle"
+                      style="padding-left:12px;"
+                    >
+                      <span style="
+                        font-size:29px;
+                        line-height:36px;
+                        font-weight:800;
+                        letter-spacing:-1px;
+                        color:#101c32;
+                        white-space:nowrap;
+                      ">
+                        Bhaji<span style="color:#00a63e;">Wala</span>
+                      </span>
+                    </td>
+
+                  </tr>
+                </table>
 
               </td>
             </tr>
 
-            <!-- MAIN CONTENT -->
+            <!-- EMAIL CONTENT -->
             <tr>
-              <td style="padding:38px 30px 30px;">
+              <td style="
+                padding:36px 30px 30px;
+                background-color:#ffffff;
+              ">
 
+                <!-- TITLE -->
                 <h1 style="
+                  margin:0 0 10px;
                   font-size:25px;
                   line-height:1.35;
+                  font-weight:700;
                   color:#173d26;
-                  margin:0 0 10px;
                   text-align:center;
                 ">
                   ${escapeHtml(title)}
                 </h1>
 
+                <!-- SUBTITLE -->
                 <p style="
+                  margin:0 0 28px;
                   font-size:14px;
                   line-height:1.7;
                   color:#718078;
                   text-align:center;
-                  margin:0 0 28px;
                 ">
                   ${escapeHtml(subtitle)}
                 </p>
 
+                <!-- DYNAMIC EMAIL BODY -->
                 ${content}
 
+                <!-- FOOTER MESSAGE -->
                 <div style="
+                  margin-top:30px;
+                  padding-top:20px;
                   border-top:1px solid #edf1ed;
-                  margin-top:32px;
-                  padding-top:22px;
                 ">
                   <p style="
-                    font-size:14px;
-                    color:#526158;
-                    line-height:1.7;
                     margin:0;
+                    font-size:13px;
+                    line-height:1.8;
+                    color:#647568;
                   ">
                     ${escapeHtml(footerMessage)}
-                  </p>
-
-                  <p style="
-                    font-size:14px;
-                    color:#26352b;
-                    font-weight:700;
-                    margin:18px 0 0;
-                  ">
-                    Warm regards,<br />
-                    Team BhajiWala
                   </p>
                 </div>
 
               </td>
             </tr>
 
-            <!-- FOOTER -->
+            <!-- BOTTOM FOOTER -->
             <tr>
-              <td align="center"
+              <td
+                align="center"
                 style="
-                  background:#f8fbf8;
-                  padding:24px 20px;
-                  border-top:1px solid #edf1ed;
-                ">
+                  padding:25px 20px;
+                  background-color:#f8faf6;
+                  border-top:1px solid #edf1eb;
+                "
+              >
 
+                <!-- BRAND NAME -->
                 <p style="
+                  margin:0 0 7px;
+                  font-size:17px;
+                  line-height:1.5;
+                  font-weight:800;
+                  letter-spacing:-0.4px;
+                ">
+                  <span style="color:#101c32;">Bhaji</span><span style="color:#00a63e;">Wala</span>
+                </p>
+
+                <!-- TAGLINE -->
+                <p style="
+                  margin:0 0 17px;
                   font-size:12px;
-                  color:#718078;
-                  margin:0 0 8px;
+                  line-height:1.6;
+                  color:#647568;
                 ">
                   Freshness delivered with care.
                 </p>
 
+                <!-- DIVIDER -->
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  role="presentation"
+                >
+                  <tr>
+                    <td style="
+                      border-top:1px solid #e5ebe3;
+                      font-size:1px;
+                      line-height:1px;
+                    ">
+                      &nbsp;
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- COPYRIGHT -->
                 <p style="
+                  margin:16px 0 5px;
                   font-size:11px;
-                  color:#9aa69e;
-                  line-height:1.6;
-                  margin:0;
+                  line-height:1.7;
+                  color:#849087;
                 ">
-                  © ${year} BhajiWala. All rights reserved.<br />
+                  &copy; ${year} BhajiWala. All rights reserved.
+                </p>
+
+                <!-- AUTOMATED EMAIL NOTICE -->
+                <p style="
+                  margin:0;
+                  font-size:11px;
+                  line-height:1.7;
+                  color:#9aa69e;
+                ">
                   This is an automated email. Please do not reply.
                 </p>
 
@@ -168,6 +262,17 @@ const emailLayout = ({
             </tr>
 
           </table>
+
+          <!-- OUTSIDE CARD TEXT -->
+          <p style="
+            margin:18px 0 0;
+            font-size:11px;
+            line-height:1.6;
+            color:#98a39a;
+            text-align:center;
+          ">
+            Made with care by Team BhajiWala
+          </p>
 
         </td>
       </tr>

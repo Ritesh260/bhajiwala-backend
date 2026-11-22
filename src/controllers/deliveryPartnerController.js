@@ -3,6 +3,14 @@ const jwt = require("jsonwebtoken");
 const DeliveryPartner = require("../models/DeliveryPartner");
 const uploadToCloudinary = require("../utils/uploadToCloudinary");
 const sendEmail = require("../utils/sendEmail");
+
+// Existing Email Templates
+const registrationEmail = require("../templates/emails/registrationEmail");
+const loginEmail = require("../templates/emails/loginEmail");
+
+// ============================================
+// GENERATE JWT TOKEN
+// ============================================
 const generateToken = (partner) => {
   return jwt.sign(
     {
@@ -16,9 +24,79 @@ const generateToken = (partner) => {
   );
 };
 
+// ============================================
+// SAFE EMAIL SENDER
+// ============================================
+const sendTemplateEmail = async (to, createEmailTemplate, emailType) => {
+  let stage = "template creation";
+
+  console.info(`[${emailType}] Email flow started`, {
+    recipient: to || "(missing)",
+  });
+
+  try {
+    if (!to) {
+      throw new Error("Recipient email is missing");
+    }
+
+    console.info(`[${emailType}] Creating email template`);
+    const emailTemplate = createEmailTemplate();
+
+    if (!emailTemplate || typeof emailTemplate !== "object") {
+      throw new Error("Email template creation returned an invalid result");
+    }
+
+    console.info(`[${emailType}] Email template created`, {
+      recipient: to,
+      subject: emailTemplate.subject,
+      hasHtml: Boolean(emailTemplate.html),
+      hasText: Boolean(emailTemplate.text),
+    });
+
+    stage = "SMTP send";
+    console.info(`[${emailType}] Sending email via SMTP`, {
+      recipient: to,
+      subject: emailTemplate.subject,
+    });
+
+    const result = await sendEmail({
+      to,
+      ...emailTemplate,
+    });
+
+    if (!result || !result.success) {
+      console.error(`[${emailType}] SMTP send failed`, {
+        recipient: to,
+        error: result?.message || "Email sender returned an invalid result",
+      });
+      return false;
+    }
+
+    console.info(`[${emailType}] SMTP accepted email`, {
+      recipient: to,
+      messageId: result.messageId,
+    });
+    return true;
+  } catch (error) {
+    console.error(`[${emailType}] ${stage} failed`, {
+      recipient: to || "(missing)",
+      error: error.message,
+      stack: error.stack,
+    });
+    return false;
+  }
+};
+
+// ============================================
 // REGISTER DELIVERY PARTNER
+// ============================================
 exports.registerDeliveryPartner = async (req, res) => {
   try {
+    console.info("[Delivery Partner Registration] Request received", {
+      method: req.method,
+      path: req.originalUrl,
+    });
+
     const {
       fullName,
       mobile,
@@ -73,6 +151,7 @@ exports.registerDeliveryPartner = async (req, res) => {
       }
     }
 
+    // Mobile validation
     if (!/^[6-9]\d{9}$/.test(mobile)) {
       return res.status(400).json({
         success: false,
@@ -80,6 +159,7 @@ exports.registerDeliveryPartner = async (req, res) => {
       });
     }
 
+    // Email validation
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({
         success: false,
@@ -87,6 +167,7 @@ exports.registerDeliveryPartner = async (req, res) => {
       });
     }
 
+    // Password validation
     if (password.length < 8) {
       return res.status(400).json({
         success: false,
@@ -101,6 +182,7 @@ exports.registerDeliveryPartner = async (req, res) => {
       });
     }
 
+    // Aadhaar validation
     if (!/^\d{12}$/.test(aadhaarNumber)) {
       return res.status(400).json({
         success: false,
@@ -108,6 +190,7 @@ exports.registerDeliveryPartner = async (req, res) => {
       });
     }
 
+    // PAN validation
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/i.test(panNumber)) {
       return res.status(400).json({
         success: false,
@@ -115,6 +198,7 @@ exports.registerDeliveryPartner = async (req, res) => {
       });
     }
 
+    // IFSC validation
     if (!/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(ifscCode)) {
       return res.status(400).json({
         success: false,
@@ -135,11 +219,15 @@ exports.registerDeliveryPartner = async (req, res) => {
     if (existingPartner) {
       return res.status(409).json({
         success: false,
-        message: "An account with this mobile number or email already exists",
+        message:
+          "An account with this mobile number or email already exists",
       });
     }
 
-    // Upload registration files to Cloudinary
+    // ========================================
+    // UPLOAD DOCUMENTS TO CLOUDINARY
+    // ========================================
+
     const files = req.files || {};
 
     const uploadDocument = async (fieldName, folder) => {
@@ -162,15 +250,33 @@ exports.registerDeliveryPartner = async (req, res) => {
       profilePhoto,
       bankDocument,
     ] = await Promise.all([
-      uploadDocument("vehiclePhoto", "delivery-partners/vehicle-photos"),
-      uploadDocument("aadhaarDocument", "delivery-partners/aadhaar"),
-      uploadDocument("panDocument", "delivery-partners/pan"),
-      uploadDocument("drivingLicenceDocument", "delivery-partners/licence"),
-      uploadDocument("profilePhoto", "delivery-partners/profile-photos"),
-      uploadDocument("bankDocument", "delivery-partners/bank-documents"),
+      uploadDocument(
+        "vehiclePhoto",
+        "delivery-partners/vehicle-photos"
+      ),
+      uploadDocument(
+        "aadhaarDocument",
+        "delivery-partners/aadhaar"
+      ),
+      uploadDocument(
+        "panDocument",
+        "delivery-partners/pan"
+      ),
+      uploadDocument(
+        "drivingLicenceDocument",
+        "delivery-partners/licence"
+      ),
+      uploadDocument(
+        "profilePhoto",
+        "delivery-partners/profile-photos"
+      ),
+      uploadDocument(
+        "bankDocument",
+        "delivery-partners/bank-documents"
+      ),
     ]);
 
-    // Store uploaded file details
+    // Store uploaded documents
     const documents = {
       vehiclePhoto: vehiclePhoto || {},
       aadhaar: aadhaarDoc || {},
@@ -180,7 +286,10 @@ exports.registerDeliveryPartner = async (req, res) => {
       bankDocument: bankDocument || {},
     };
 
-    // Create delivery partner
+    // ========================================
+    // CREATE DELIVERY PARTNER
+    // ========================================
+
     const partner = await DeliveryPartner.create({
       fullName: fullName.trim(),
       mobile,
@@ -203,35 +312,22 @@ exports.registerDeliveryPartner = async (req, res) => {
       bankName,
       applicationStatus: "pending",
     });
-// Send registration confirmation email
-const emailResult = await sendEmail({
-  to: partner.email,
-  subject: "BhajiWala - Registration Successful",
-  text: `Hello ${partner.fullName}, your delivery partner registration has been submitted successfully. Your application is pending verification.`,
-  html: `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 25px; color: #333;">
-      <h2 style="color: #15803d;">Welcome to BhajiWala!</h2>
 
-      <p>Hello <strong>${partner.fullName}</strong>,</p>
+    // ========================================
+    // SEND REGISTRATION EMAIL
+    // ========================================
 
-      <p>Your delivery partner registration has been submitted successfully.</p>
+    await sendTemplateEmail(
+      partner.email,
+      () =>
+        registrationEmail({
+          fullName: partner.fullName,
+          applicationId: partner._id.toString(),
+        }),
+      "Registration Confirmation Email"
+    );
 
-      <div style="background: #f0fdf4; padding: 15px; border-radius: 10px;">
-        <p><strong>Application ID:</strong> ${partner._id}</p>
-        <p><strong>Status:</strong> Pending Verification</p>
-      </div>
-
-      <p>Our team will review your application and notify you about the approval status.</p>
-
-      <p>Thank you for joining BhajiWala!</p>
-      <strong>Team BhajiWala</strong>
-    </div>
-  `,
-});
-
-if (!emailResult.success) {
-  console.error("Registration email could not be sent:", emailResult.message);
-}
+    // Registration response
     return res.status(201).json({
       success: true,
       message:
@@ -261,9 +357,16 @@ if (!emailResult.success) {
   }
 };
 
+// ============================================
 // LOGIN DELIVERY PARTNER
+// ============================================
 exports.loginDeliveryPartner = async (req, res) => {
   try {
+    console.info("[Delivery Partner Login] Request received", {
+      method: req.method,
+      path: req.originalUrl,
+    });
+
     const { identifier, password } = req.body;
 
     if (!identifier || !password) {
@@ -273,10 +376,13 @@ exports.loginDeliveryPartner = async (req, res) => {
       });
     }
 
+    const normalizedIdentifier = identifier.trim();
+
+    // Find partner using mobile or email
     const partner = await DeliveryPartner.findOne({
       $or: [
-        { mobile: identifier },
-        { email: identifier.toLowerCase() },
+        { mobile: normalizedIdentifier },
+        { email: normalizedIdentifier.toLowerCase() },
       ],
     }).select("+password");
 
@@ -287,6 +393,7 @@ exports.loginDeliveryPartner = async (req, res) => {
       });
     }
 
+    // Check password
     const isMatch = await partner.comparePassword(password);
 
     if (!isMatch) {
@@ -296,6 +403,7 @@ exports.loginDeliveryPartner = async (req, res) => {
       });
     }
 
+    // Check account status
     if (!partner.isActive) {
       return res.status(403).json({
         success: false,
@@ -303,8 +411,29 @@ exports.loginDeliveryPartner = async (req, res) => {
       });
     }
 
+    // Generate token
     const token = generateToken(partner);
 
+    // ========================================
+    // SEND LOGIN SUCCESS EMAIL
+    // ========================================
+
+    await sendTemplateEmail(
+      partner.email,
+      () =>
+        loginEmail({
+          fullName: partner.fullName,
+          loginTime: new Date().toLocaleString("en-IN", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }),
+          device: req.get("user-agent") || "Not available",
+          ipAddress: req.ip || "Not available",
+        }),
+      "Login Notification Email"
+    );
+
+    // Login response
     return res.status(200).json({
       success: true,
       message: "Login successful",
@@ -328,18 +457,24 @@ exports.loginDeliveryPartner = async (req, res) => {
   }
 };
 
+// ============================================
 // GET LOGGED-IN PARTNER PROFILE
+// ============================================
 exports.getDeliveryPartnerProfile = async (req, res) => {
   try {
     const partner = await DeliveryPartner.findById(
       req.deliveryPartner._id
-    ).select("-password -aadhaarNumber -panNumber -accountNumber");
+    ).select(
+      "-password -aadhaarNumber -panNumber -accountNumber"
+    );
 
     return res.status(200).json({
       success: true,
       data: partner,
     });
   } catch (error) {
+    console.error("Get Delivery Partner Profile Error:", error);
+
     return res.status(500).json({
       success: false,
       message: "Unable to fetch profile",
@@ -347,7 +482,9 @@ exports.getDeliveryPartnerProfile = async (req, res) => {
   }
 };
 
+// ============================================
 // GET APPLICATION STATUS
+// ============================================
 exports.getApplicationStatus = async (req, res) => {
   try {
     const partner = await DeliveryPartner.findById(
@@ -361,6 +498,8 @@ exports.getApplicationStatus = async (req, res) => {
       data: partner,
     });
   } catch (error) {
+    console.error("Get Application Status Error:", error);
+
     return res.status(500).json({
       success: false,
       message: "Unable to fetch application status",
@@ -368,7 +507,9 @@ exports.getApplicationStatus = async (req, res) => {
   }
 };
 
+// ============================================
 // DELIVERY PARTNER DASHBOARD
+// ============================================
 exports.getPartnerDashboard = async (req, res) => {
   return res.status(200).json({
     success: true,
